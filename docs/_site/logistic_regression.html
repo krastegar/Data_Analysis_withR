@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Logistic Regression</title>
+
+<script src="site_libs/header-attrs-2.14/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">MultiVariate Statistics</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Dimensional Reduction of Cancer Cohort</a>
+</li>
+<li>
+  <a href="logistic_regression.html">Logistic Regression with Binomial GLM</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Logistic Regression</h1>
+
+</div>
+
+
+<div id="purpose" class="section level1">
+<h1>Purpose:</h1>
+<p>Early detection of diseases is one of the most important factors when
+it comes to patient health. The faster the disease is detected the
+higher the chances of patient recovery. One of the best way to detecting
+diseases is to identify specific biomarkers which can be related to
+these diseases and determine if they play specific part in a binary
+response for a patient to be healthy or sick. In this notebook I am
+analyzing a patient cohort that are split up into two different groups
+(Cancer or Healthy) and using a logistic regression model to determine
+if specific protein concentration would be good indicators for
+determining if a patient is healthy or has cancer.</p>
+</div>
+<div id="data-wrangling" class="section level1">
+<h1>Data Wrangling</h1>
+<p>Doing some data wrangling. I want to create a column where I can I
+have binary values that correlate to the patients status of having
+cancer or not. The overall goal is to look for specific biomarkers that
+may be a good indicator of cancer and can be shown on a logistic
+regression curve.</p>
+<pre class="r"><code>bm = read.csv(&quot;MDT2.csv&quot;) # reading in my data table
+
+# Creating my binary values to classify patients as Healthy vs Cancer. Cancer is assigned a value of 1 and Healthy is 0
+bm = mutate(bm, binary = bm$Cancer.Healthy)
+bm$binary[bm$binary==&quot;Cancer&quot;] = &quot;1&quot;
+bm$binary[bm$binary==&quot;Healthy&quot;] = &quot;0&quot;
+bm$binary[bm$binary == &quot;Ovarian&quot; | bm$binary ==&quot;Pancreatic&quot; | 
+  bm$binary == &quot;Bladder&quot;] = &quot;1&quot;
+
+#noticed that some of my values in my Cancer vs Healthy column had the Cancer type in it, So I am cleaning it up here. 
+bm$Cancer.Healthy = as.factor(bm$Cancer.Healthy)
+bm$Cancer.Healthy[bm$Cancer.Healthy==&quot;Ovarian&quot; | 
+                    bm$Cancer.Healthy==&quot;Pancreatic&quot; |
+                    bm$Cancer.Healthy==&quot;Bladder&quot;] = &quot;Cancer&quot;</code></pre>
+</div>
+<div id="exploratory-data-analysis" class="section level1">
+<h1>Exploratory Data Analysis</h1>
+<p>Performing some exploratory data anlaysis. I want to see if I can
+narrow down the 20 biomarkers that are tested for on the Luminex plate
+and look for maybe 2 or 3 of them to build a model around.</p>
+<pre class="r"><code># remember to use correlation plot with all the cancer biomarkers 
+bm[16:37] = as.integer(as.matrix(bm[16:37])) # have to change my biomarker concentration to numeric values </code></pre>
+<pre><code>## Warning: NAs introduced by coercion</code></pre>
+<pre class="r"><code>explore=bm %&gt;% dplyr::select(Patient.ID, CA.19.9, CA.125, CA.15.3, MIF, CEA, OPN,Cancer.Healthy, Gender) %&gt;%
+  pivot_longer(., cols = c(CA.19.9, CA.125, CA.15.3, MIF, CEA, OPN), 
+               names_to = &quot;Biomarkers&quot;, 
+               values_to = &quot;Val&quot;) %&gt;% 
+  ggplot(aes(x=Biomarkers, y = log(Val), fill = Cancer.Healthy)) + 
+  geom_boxplot() + ylim(c(0,15)) + 
+  ylab(&quot;log(Concentrarion) (U/mL)&quot;) +
+  theme_classic() + 
+  theme(axis.text.x.bottom = element_text(angle = 90, size=12 ),
+        strip.text.x = element_text(size = 15, face = &quot;bold&quot;),
+        axis.title.x.bottom = element_text(size=16, face=&quot;bold&quot;),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = &quot;bold&quot;),
+        legend.title = element_text(size = 13, face = &quot;bold&quot;),
+        legend.text = element_text(size = 12)) +
+  scale_fill_discrete(name = &quot;Cancer Status&quot;) # works because fill is why I have a legend (might be different if legend was color)
+explore</code></pre>
+<pre><code>## Warning: Removed 200 rows containing non-finite values (stat_boxplot).</code></pre>
+<p><img src="logistic_regression_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<pre class="r"><code>ggsave(&quot;Exp_boxplot.png&quot;, explore)</code></pre>
+<pre><code>## Saving 7 x 5 in image</code></pre>
+<pre><code>## Warning: Removed 200 rows containing non-finite values (stat_boxplot).</code></pre>
+<pre class="r"><code># Checking different transformations of my data into a normal distribution. 
+
+par(mfrow=c(2,2)) # fit graphs in one panel
+qqnorm(nthroot(bm[,32]+100,3), main = &quot;OPN (Q-Q Plot)&quot; )
+qqline(nthroot(bm[,32]+100,3))
+qqnorm(nthroot(bm[,17]+100,3), main = &quot;CA15-3 (Q-Q Plot)&quot; )
+qqline(nthroot(bm[,17]+100,3))
+qqnorm(nthroot(bm[,18]+100,3), main = &quot;CA19-3 (Q-Q Plot)&quot; )
+qqline(nthroot(bm[,17]+100,3))
+
+# I am choosing to go with the sqrt transformation because CA.19.9 distribution is closer to normal than cuberoot
+par(mfrow=c(2,2))</code></pre>
+<p><img src="logistic_regression_files/figure-html/unnamed-chunk-2-2.png" width="672" /></p>
+<pre class="r"><code>qqnorm(sqrt(bm[,32]+1000), main = &quot;OPN (Q-Q Plot)&quot; )
+qqline(sqrt(bm[,32]+1000))
+qqnorm(sqrt(bm[,17]+1000), main = &quot;CA15-3 (Q-Q Plot)&quot; )
+qqline(sqrt(bm[,17]+1000))
+qqnorm(sqrt(bm[,18]+1000), main = &quot;CA19-3 (Q-Q Plot)&quot; )
+qqline(sqrt(bm[,17]+1000))
+
+# I am using pivot_longer to change the shape of my data frame so that I am able to plot multiple biomarkers. What it does is takes the 7 columns that I fed into the cols = arguement and puts them into 1 long column. It also makes another column specifically for the values of each biomarker</code></pre>
+<p><img src="logistic_regression_files/figure-html/unnamed-chunk-2-3.png" width="672" /></p>
+<p>Based on my observations of my exploratory plot I will focus on using
+OPN, CA19-9 and CA15-3. It might be interesting to look at OPN for
+females exclusively considering that we can see a difference in between
+gender in our boxplots. Before creating my model I experimented with two
+different ways to transform my data so that it fits a normal
+distribution (cube root vs square root). After inspecting the qqnorm
+plots, I decided that using the square root transformation gives me a
+slightly better estimation than cube root.</p>
+</div>
+<div id="building-binary-glm" class="section level1">
+<h1>Building Binary glm</h1>
+<pre class="r"><code>mod1 = glm(Cancer.Healthy~nthroot(OPN+100,3)+nthroot(CA.19.9+100,3)+nthroot(CA.15.3+100,3), family = binomial(link = &quot;logit&quot;), data = bm)
+summary(mod1)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = Cancer.Healthy ~ nthroot(OPN + 100, 3) + nthroot(CA.19.9 + 
+##     100, 3) + nthroot(CA.15.3 + 100, 3), family = binomial(link = &quot;logit&quot;), 
+##     data = bm)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -1.8191  -1.0398   0.6493   0.9077   1.4694  
+## 
+## Coefficients:
+##                            Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)               27.627114   7.423686   3.721 0.000198 ***
+## nthroot(OPN + 100, 3)     -0.006962   0.014809  -0.470 0.638273    
+## nthroot(CA.19.9 + 100, 3) -0.345837   0.148077  -2.336 0.019516 *  
+## nthroot(CA.15.3 + 100, 3) -5.285063   1.575094  -3.355 0.000793 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 307.01  on 230  degrees of freedom
+## Residual deviance: 261.96  on 227  degrees of freedom
+##   (5 observations deleted due to missingness)
+## AIC: 269.96
+## 
+## Number of Fisher Scoring iterations: 6</code></pre>
+<pre class="r"><code>mod1.1 = glm(Cancer.Healthy~sqrt(OPN+1000)+sqrt(CA.19.9+1000)+sqrt(CA.15.3+1000), family = binomial(link = &quot;logit&quot;), data = bm)
+summary(mod1.1)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = Cancer.Healthy ~ sqrt(OPN + 1000) + sqrt(CA.19.9 + 
+##     1000) + sqrt(CA.15.3 + 1000), family = binomial(link = &quot;logit&quot;), 
+##     data = bm)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -1.7998  -1.0486   0.6633   0.9104   1.4992  
+## 
+## Coefficients:
+##                        Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)          160.468530  45.547243   3.523 0.000426 ***
+## sqrt(OPN + 1000)      -0.002014   0.002193  -0.918 0.358543    
+## sqrt(CA.19.9 + 1000)  -0.137054   0.076835  -1.784 0.074465 .  
+## sqrt(CA.15.3 + 1000)  -4.890950   1.432057  -3.415 0.000637 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 307.01  on 230  degrees of freedom
+## Residual deviance: 261.79  on 227  degrees of freedom
+##   (5 observations deleted due to missingness)
+## AIC: 269.79
+## 
+## Number of Fisher Scoring iterations: 7</code></pre>
+<pre class="r"><code># testing to see if the models are different
+anova(mod1, mod1.1, test=&quot;Chisq&quot;)</code></pre>
+<pre><code>## Analysis of Deviance Table
+## 
+## Model 1: Cancer.Healthy ~ nthroot(OPN + 100, 3) + nthroot(CA.19.9 + 100, 
+##     3) + nthroot(CA.15.3 + 100, 3)
+## Model 2: Cancer.Healthy ~ sqrt(OPN + 1000) + sqrt(CA.19.9 + 1000) + sqrt(CA.15.3 + 
+##     1000)
+##   Resid. Df Resid. Dev Df Deviance Pr(&gt;Chi)
+## 1       227     261.96                     
+## 2       227     261.79  0  0.17087</code></pre>
+<pre class="r"><code># I am chosing mod1.1 because the deciding factor (for me) is to see if CA19.9 is significant or not and since mod1.1 transformation has CA19.9 fitting the qqnorm plot better I would say that mod1.1 is a more accurate description of what our data is representing 
+options(contrasts = c(&quot;contr.sum&quot;,&quot;contr.poly&quot;))
+Anova(mod1.1, type = 3, test=&quot;F&quot;)</code></pre>
+<pre><code>## Analysis of Deviance Table (Type III tests)
+## 
+## Response: Cancer.Healthy
+## Error estimate based on Pearson residuals 
+## 
+##                       Sum Sq  Df F values   Pr(&gt;F)    
+## sqrt(OPN + 1000)       0.828   1   0.8448 0.358999    
+## sqrt(CA.19.9 + 1000)   6.782   1   6.9181 0.009117 ** 
+## sqrt(CA.15.3 + 1000)  16.848   1  17.1852 4.79e-05 ***
+## Residuals            222.549 227                      
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>options(contrasts = c(&quot;contr.treatment&quot;,&quot;contr.poly&quot;))
+
+#it looks like that both CA19-9 and CA15-3 play a significant role in determing cancer 
+mod2 = glm(Cancer.Healthy~sqrt(OPN+1000)*Gender+sqrt(CA.19.9+1000)*Gender+sqrt(CA.15.3+1000)*Gender, family = binomial(link = &quot;logit&quot;), data = bm)</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre class="r"><code>summary(mod2) </code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = Cancer.Healthy ~ sqrt(OPN + 1000) * Gender + sqrt(CA.19.9 + 
+##     1000) * Gender + sqrt(CA.15.3 + 1000) * Gender, family = binomial(link = &quot;logit&quot;), 
+##     data = bm)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -2.1252  -0.4807   0.4696   0.7327   1.8495  
+## 
+## Coefficients:
+##                                   Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)                     205.790312  54.448296   3.780 0.000157 ***
+## sqrt(OPN + 1000)                 -0.002884   0.002527  -1.141 0.253760    
+## GenderMale                      -54.683866 223.495271  -0.245 0.806708    
+## sqrt(CA.19.9 + 1000)             -0.076561   0.061106  -1.253 0.210232    
+## sqrt(CA.15.3 + 1000)             -6.360133   1.711584  -3.716 0.000202 ***
+## sqrt(OPN + 1000):GenderMale       0.020161   0.011096   1.817 0.069214 .  
+## GenderMale:sqrt(CA.19.9 + 1000)  -5.107309   2.125194  -2.403 0.016251 *  
+## GenderMale:sqrt(CA.15.3 + 1000)   6.740924   6.836135   0.986 0.324098    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 307.01  on 230  degrees of freedom
+## Residual deviance: 203.45  on 223  degrees of freedom
+##   (5 observations deleted due to missingness)
+## AIC: 219.45
+## 
+## Number of Fisher Scoring iterations: 10</code></pre>
+<pre class="r"><code>options(contrasts = c(&quot;contr.sum&quot;,&quot;contr.poly&quot;))
+Anova(mod2, type = 3, test=&quot;F&quot;)</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Analysis of Deviance Table (Type III tests)
+## 
+## Response: Cancer.Healthy
+## Error estimate based on Pearson residuals 
+## 
+##                              Sum Sq  Df F values    Pr(&gt;F)    
+## sqrt(OPN + 1000)              1.266   1   1.3146   0.25278    
+## Gender                        0.057   1   0.0596   0.80731    
+## sqrt(CA.19.9 + 1000)          2.535   1   2.6321   0.10614    
+## sqrt(CA.15.3 + 1000)         22.302   1  23.1561 2.752e-06 ***
+## sqrt(OPN + 1000):Gender       3.843   1   3.9905   0.04697 *  
+## Gender:sqrt(CA.19.9 + 1000)  17.658   1  18.3338 2.755e-05 ***
+## Gender:sqrt(CA.15.3 + 1000)   0.881   1   0.9151   0.33979    
+## Residuals                   214.779 223                       
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>options(contrasts = c(&quot;contr.treatment&quot;,&quot;contr.poly&quot;))
+anova(mod1.1, mod2,test=&quot;Chisq&quot;) # liklihood ratio test</code></pre>
+<pre><code>## Analysis of Deviance Table
+## 
+## Model 1: Cancer.Healthy ~ sqrt(OPN + 1000) + sqrt(CA.19.9 + 1000) + sqrt(CA.15.3 + 
+##     1000)
+## Model 2: Cancer.Healthy ~ sqrt(OPN + 1000) * Gender + sqrt(CA.19.9 + 1000) * 
+##     Gender + sqrt(CA.15.3 + 1000) * Gender
+##   Resid. Df Resid. Dev Df Deviance  Pr(&gt;Chi)    
+## 1       227     261.79                          
+## 2       223     203.45  4   58.335 6.491e-12 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code># it seems that interaction with gender is signficant with the CA19-9 biomarker, CA15-3 seems to be are most significant biomarker. OPN with the interaction of Gender included seems to be on the boarder. I am going to drop the OPN biomarker because without the gender interaction it is not significant and even witht the gender interaction it is borderline. 
+
+mod3 = glm(Cancer.Healthy~sqrt(CA.19.9+1000)*Gender+sqrt(CA.15.3+1000), family = binomial(link = &quot;logit&quot;), data = bm) </code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre class="r"><code>summary(mod3)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = Cancer.Healthy ~ sqrt(CA.19.9 + 1000) * Gender + 
+##     sqrt(CA.15.3 + 1000), family = binomial(link = &quot;logit&quot;), 
+##     data = bm)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -2.0088  -0.6007   0.5338   0.7446   2.1436  
+## 
+## Coefficients:
+##                                 Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)                     191.2234    45.6833   4.186 2.84e-05 ***
+## sqrt(CA.19.9 + 1000)             -0.1032     0.0696  -1.483   0.1380    
+## GenderMale                       80.5079    38.4325   2.095   0.0362 *  
+## sqrt(CA.15.3 + 1000)             -5.8844     1.4390  -4.089 4.33e-05 ***
+## sqrt(CA.19.9 + 1000):GenderMale  -2.5822     1.2043  -2.144   0.0320 *  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 307.01  on 230  degrees of freedom
+## Residual deviance: 214.12  on 226  degrees of freedom
+##   (5 observations deleted due to missingness)
+## AIC: 224.12
+## 
+## Number of Fisher Scoring iterations: 9</code></pre>
+<pre class="r"><code>options(contrasts = c(&quot;contr.sum&quot;,&quot;contr.poly&quot;))
+Anova(mod3, type = 3, test=&quot;F&quot;)</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Analysis of Deviance Table (Type III tests)
+## 
+## Response: Cancer.Healthy
+## Error estimate based on Pearson residuals 
+## 
+##                              Sum Sq  Df F values    Pr(&gt;F)    
+## sqrt(CA.19.9 + 1000)          4.488   1   4.8059  0.029383 *  
+## Gender                        8.427   1   9.0228  0.002967 ** 
+## sqrt(CA.15.3 + 1000)         25.559   1  27.3662 3.835e-07 ***
+## sqrt(CA.19.9 + 1000):Gender   9.393   1  10.0577  0.001728 ** 
+## Residuals                   211.073 226                       
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code>options(contrasts = c(&quot;contr.treatment&quot;,&quot;contr.poly&quot;))
+anova(mod2, mod3,test=&quot;Chisq&quot;)</code></pre>
+<pre><code>## Analysis of Deviance Table
+## 
+## Model 1: Cancer.Healthy ~ sqrt(OPN + 1000) * Gender + sqrt(CA.19.9 + 1000) * 
+##     Gender + sqrt(CA.15.3 + 1000) * Gender
+## Model 2: Cancer.Healthy ~ sqrt(CA.19.9 + 1000) * Gender + sqrt(CA.15.3 + 
+##     1000)
+##   Resid. Df Resid. Dev Df Deviance Pr(&gt;Chi)  
+## 1       223     203.45                       
+## 2       226     214.12 -3   -10.67  0.01365 *
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
+<pre class="r"><code># My liklihood ratio is telling me that there is a difference between mod2 and mod3. I will be using mod3 because it seems to account for more of the variation in our data set. 
+
+x = predict(mod3)
+y = resid(mod3)
+binnedplot(x, y)</code></pre>
+<p><img src="logistic_regression_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+</div>
+<div id="logistic-regression-plots" class="section level1">
+<h1>Logistic Regression Plots</h1>
+<pre class="r"><code>bm$binary = as.numeric(bm$binary)# weight, arguement is important for reducing impact of outliers when fitting model for any variable of interest
+CA19.9=ggplot(bm, aes(x = sqrt(CA.19.9+1000), y=binary, weight = sqrt(CA.19.9+1000) ,color=Gender)) + 
+  xlim(c(30,150)) +
+  geom_point() + 
+  geom_smooth(data = bm, aes(x=sqrt(CA.19.9+1000), y = binary), method = &quot;glm&quot;, method.args = list(family = &quot;binomial&quot;)) + 
+  theme_classic() + 
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = &quot;bold&quot;),
+        axis.title.x.bottom = element_text(size=16, face=&quot;bold&quot;),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = &quot;bold&quot;),
+        legend.title = element_text(size = 13, face = &quot;bold&quot;),
+        legend.text = element_text(size = 12)) +
+  xlab(&quot;sqrt(CA.19.9+1000)&quot;) + ylab(&quot;Probability of Cancer&quot;)
+ggsave(&quot;CA19-9.png&quot;, CA19.9)</code></pre>
+<pre><code>## Saving 7 x 5 in image</code></pre>
+<pre><code>## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
+<pre><code>## Warning: Removed 5 rows containing non-finite values (stat_smooth).</code></pre>
+<pre><code>## Warning in eval(family$initialize): non-integer #successes in a binomial glm!
+
+## Warning in eval(family$initialize): non-integer #successes in a binomial glm!</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: Removed 5 rows containing missing values (geom_point).</code></pre>
+<pre class="r"><code>CA15.3=ggplot(bm, aes(x = sqrt(CA.15.3+1000), y=binary, weight=sqrt(CA.15.3+1000))) +
+  xlim(c(31.5,33)) +
+  geom_point() + 
+  geom_smooth(data = bm, aes(x=sqrt(CA.15.3+1000), y = binary), method = &quot;glm&quot;, method.args = list(family = &quot;binomial&quot;)) + 
+  theme_classic() + 
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = &quot;bold&quot;),
+        axis.title.x.bottom = element_text(size=16, face=&quot;bold&quot;),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = &quot;bold&quot;)) +
+  xlab(&quot;sqrt(CA.15.3+1000)&quot;) + ylab(&quot;Probability of Cancer&quot;)
+
+ggsave(&quot;CA15-3.png&quot;, CA15.3)</code></pre>
+<pre><code>## Saving 7 x 5 in image
+## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
+<pre><code>## Warning: Removed 1 rows containing non-finite values (stat_smooth).</code></pre>
+<pre><code>## Warning in eval(family$initialize): non-integer #successes in a binomial glm!</code></pre>
+<pre><code>## Warning: Removed 1 rows containing missing values (geom_point).</code></pre>
+<pre class="r"><code>CA15.3</code></pre>
+<pre><code>## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
+<pre><code>## Warning: Removed 1 rows containing non-finite values (stat_smooth).</code></pre>
+<pre><code>## Warning in eval(family$initialize): non-integer #successes in a binomial glm!</code></pre>
+<pre><code>## Warning: Removed 1 rows containing missing values (geom_point).</code></pre>
+<p><img src="logistic_regression_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre class="r"><code>CA19.9</code></pre>
+<pre><code>## `geom_smooth()` using formula &#39;y ~ x&#39;</code></pre>
+<pre><code>## Warning: Removed 5 rows containing non-finite values (stat_smooth).</code></pre>
+<pre><code>## Warning in eval(family$initialize): non-integer #successes in a binomial glm!
+
+## Warning in eval(family$initialize): non-integer #successes in a binomial glm!</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: Removed 5 rows containing missing values (geom_point).</code></pre>
+<p><img src="logistic_regression_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
+</div>
+<div id="conclusion" class="section level1">
+<h1>Conclusion:</h1>
+<p>The final model I decided to stick with was a binomial logistic
+regression model only looks at two of the six biomarkers from the random
+subsets. These two biomarkers are CA19-9 and CA15-3. Looking at the
+significance of gender we do see that it has a significant interaction
+with the CA19-9 biomarker, but not with CA15-3. Including all these
+factors I ended up plotting my final model using a binned plot from the
+arm package. Binned plot shows where the residuals lie within the
+standard error of my model, which is determined by my fixed variables.
+Looking at my logistic regression curves it does seem that both CA19-9
+and CA15-3 protein concentrations are good indicators for the binary
+response of a patient having cancer or being healthy.</p>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

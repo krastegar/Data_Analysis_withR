@@ -1,0 +1,288 @@
+---
+title: 'Dimensional Reduction'
+output: html_document
+---
+
+# Purpose:
+The field of diagnostics is crucial for patient survival. To be able to diagnosis terminal disease's such as cancer at earlier stages drastically increases the chance of survival. To do this we would need to know what signals to look for. This is where liquid biopsy is useful because it is a process where it can isolate biomarkers from the blood that have been known to correlate with different cancers. Previously I used logistic regression to look at a small subset of biomarkers and determine if they are good indicators of cancer. This time I am going to determine if the data set I am working with can be visually separated into cancer and healthy groups and what variables play the biggest role in determing cancer. On top of that, I am going to determine which factors play the biggest contribution to each specific cancer. 
+
+# Loading in Libraries
+```{r}
+rm(list=ls())
+library(cluster)
+library(factoextra)
+library(dplyr)
+library(ggfortify)
+library(ggplot2)
+library(caret)
+library(mlbench)
+library(vegan)
+```
+
+
+# Data wrangling
+```{r}
+cancer = read.csv("MDT3.csv", header = T)
+#cancer = cancer[c(-1,-2),-1] # getting rid of top 2 empty rows 
+
+# Making my first row into headers from an already existing dataframe in my environment
+# names(cancer) <- as.matrix(cancer[1, ])
+# cancer = cancer[-1, ]
+# cancer[] <- lapply(cancer, function(x) type.convert(as.character(x)))
+# cancer
+
+#Removing Specific Columns that I am not interested in
+# sub_cancer=cancer[ , -which(names(cancer) %in% c("Subject Cohort ID","Sample Type", 
+#                                  "AJCC Stage", "A/B/C","T", "N", "M","Histopathology"))]
+
+# Removing columns with all NA's in it 
+clean_cancer=cancer %>%
+   select(where(~!all(is.na(.))))
+
+#Scaling my cancer data set and changing label of control to healthy
+#clean_cancer = scale(clean_cancer)
+clean_cancer$Cohort[clean_cancer$Cohort=="Control"] = "Healthy"
+clean_cancer$Histopathology[clean_cancer$Histopathology==""] = "Healthy"
+
+options(ggrepel.max.overlaps = Inf) # might help the knitting problem
+
+```
+
+
+# K-mediods clustering 
+K-mediods cluster algorithm is very similar to K-means except that it treats one object (mediod) as the cluster instead of a calculating the distance from a centroid. Once it finds the mediod it performs a switch with all of the non-mediod points and calculates the dissimalarity of the two points. It iteratively repeats this process until it minimizes the dissimilarity between all points. The benefit to this is that it becomes more robust and less sensitive to the effects of outlier points. 
+```{r}
+biomarkers = na.omit(clean_cancer[, 12:53])
+biomarkers = scale(biomarkers)
+optimal_clusters=fviz_nbclust(biomarkers, FUNcluster = pam ,method="silhouette") 
+optimal=optimal_clusters +ggtitle("Optimal Clusters") + 
+  theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = "bold"),
+        axis.title.x.bottom = element_text(size=16, face="bold"),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = "bold"),
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        legend.title = element_text(size = 13, face = "bold"),
+        legend.text = element_text(size = 12)) 
+optimal
+ggsave("optimal_cluster.png", optimal)
+# fviz_nbclust is telling me that I have two optimal clusters which makes sense because it is probably clustering healthy samples together away from cancer samples 
+# silhouette is a measure of the distance between clusters (trying to find the optimal distance between clusters)
+```
+
+# Visualizing Initial Clusters b/w Cancer and Healthy Patients
+```{r}
+set.seed(123)
+# calculating PAM clusters
+pam.res = pam(biomarkers, 2)
+#print(pam.res)
+
+pam_clust = cbind(na.omit(clean_cancer), cluster = pam.res$cluster) # have to do na.omit to make dimensions of df's match
+
+clean_cancer$Cohort = as.factor(clean_cancer$Cohort)
+biomarkers = as.matrix(biomarkers)
+
+k_mediod=fviz_cluster(pam.res, data = na.omit(clean_cancer), geom = c("point"),
+              addEllipses=TRUE, ellipse.type='norm', repel = T )
+kmed=k_mediod + ggtitle("K-mediod Clusters") +
+  theme_classic()+
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = "bold"),
+        axis.title.x.bottom = element_text(size=16, face="bold"),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = "bold"),
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        legend.title = element_text(size = 13, face = "bold"),
+        legend.text = element_text(size = 12))
+kmed
+ggsave("k_mediod.png", kmed)
+```
+To determine the composition of the two clusters that we saw I decided to use a PCA biplot, with different colors representing the different types of cancer. This way we can hopefully determine if the two clusters are significant when it comes to separating the cohort based on having cancer or being healthy. 
+
+# Using PCA to determine composition of K-mediod clusters 
+```{r}
+biomarkers.pca = prcomp(na.omit(biomarkers), center = T, scale. = T )
+cohort = fviz_pca_biplot(biomarkers.pca, col.ind = (clean_cancer$Cohort[-647])
+# last cell was empty and it was messing with my legend
+                ,geom = c("point"), geom.var = "point",addEllipses=TRUE,
+                mean.point=TRUE, ellipse.type='norm', repel = T )
+cohort_final=cohort + theme_classic() + ggtitle("PCA of Cohort") +
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = "bold"),
+        axis.title.x.bottom = element_text(size=16, face="bold"),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = "bold"),
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        legend.title = element_text(size = 13, face = "bold"),
+        legend.text = element_text(size = 12))
+cohort_final
+ggsave("cohort.png", cohort_final)
+# wanted to see if it was gender clustering 
+gender = fviz_pca_biplot(biomarkers.pca, col.ind = (clean_cancer$Sex[-647])
+                ,geom = c("point"), geom.var = "point",addEllipses=TRUE,
+                mean.point=TRUE, ellipse.type='norm', repel = T )
+
+gender + theme_classic() + ggtitle("PCA of Gender") +
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = "bold"),
+        axis.title.x.bottom = element_text(size=16, face="bold"),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = "bold"),
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        legend.title = element_text(size = 13, face = "bold"),
+        legend.text = element_text(size = 12)) 
+
+
+
+```
+
+The PCA is showing that the two distinct clusters shown previously have all different types of healthy and cancer patients mixed into it. This could possibly be due to having too many biomarkers in the analysis. I will Repeating the process with a more filtered set of features. Since the clusters were not separated by cancer type, I decided to see if they were separated by gender. Looking at the second PCA biplot we can see that this is not the case
+
+# Filtering out features based on PC contributions
+```{r}
+summary(biomarkers.pca)
+
+#calculate total variance explained by each principal component
+var_explained = biomarkers.pca$sdev^2 / sum(biomarkers.pca$sdev^2)
+
+#create scree plot to see which Principal components I should use 
+scree=qplot(c(1:42), var_explained) + 
+  geom_line() + 
+  geom_point(size = 3) +
+  theme_classic()+
+      theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = "bold"),
+        axis.title.x.bottom = element_text(size=16, face="bold"),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = "bold"),
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5)) +
+  xlab("Principal Component") + 
+  ylab("Variance Explained") +
+  ggtitle("Scree Plot") +
+  ylim(0, 0.4)
+scree
+ggsave("scree.png", scree)
+# Contributions from PC1
+PC1_contribution = fviz_contrib(biomarkers.pca, choice = "var", axes =1 , top = 21)
+PC1_contribution
+PC1_list_of_vars = PC1_contribution[["layers"]][[1]][["data"]][["name"]] 
+# list of variables are inside PC_contribuition object
+
+#Contributions from PC2
+PC2_contribution = fviz_contrib(biomarkers.pca, choice = "var", axes =2 , top = 8)
+PC2_contribution
+PC2_list_of_vars = PC2_contribution[["layers"]][[1]][["data"]][["name"]]
+
+#Contributions from PC3
+PC3_contribution = fviz_contrib(biomarkers.pca, choice = "var", axes =3 , top = 9)
+PC3_contribution
+PC3_list_of_vars = PC3_contribution[["layers"]][[1]][["data"]][["name"]]
+
+#Combining variables
+pc1_pc2 = setdiff(PC2_list_of_vars, PC1_list_of_vars)
+pc1_pc3 = setdiff(PC3_list_of_vars, PC1_list_of_vars)
+pc1_pc2# I am going to just combine pc1 and pc2 list 
+pc1_pc3
+filtered_list = c(PC1_list_of_vars,PC2_list_of_vars,PC3_list_of_vars)
+filtered_list
+
+#Creating a more filtered data set for PCA 
+new_cancer = clean_cancer[filtered_list]
+#new_cancer
+
+# Creating new marix for pca
+new_biomarkers = scale(as.matrix(new_cancer[,12:29]), center = T, scale = T)
+#new_biomarkers
+
+```
+To reduce the amount of “noise” in my data set, I decided to reduce the number of variables in my analysis
+To do this I took the most important features from PC1, PC2, and PC3 and used those to create a new filtered data set. The new filtered data contained only 32 biomarkers instead of 42.  
+
+
+# Making New PCA biplot 
+```{r}
+
+new_biomarkers.pca = prcomp(na.omit(new_biomarkers), center = F, scale. = F )
+filtered_cohort = fviz_pca_biplot(new_biomarkers.pca, col.ind = (clean_cancer$Cohort[-647])
+                ,geom = c("point"), geom.var = "point",addEllipses=TRUE,
+                mean.point=TRUE, ellipse.type='norm', repel = T )
+
+pca_cohort=filtered_cohort + theme_classic() + ggtitle("PCA of PC Contribution") +
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = "bold"),
+        axis.title.x.bottom = element_text(size=16, face="bold"),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = "bold"),
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        legend.title = element_text(size = 13, face = "bold"),
+        legend.text = element_text(size = 12))
+pca_cohort
+ggsave("pca_cohort.png", pca_cohort)
+
+```
+Since filtering features based on Principle Component contribution was did not give us the cluster separation that I was looking for, I will resort to using Recursive Feature Elimination (RFE) and then use NMDS to visualize the clusters. 
+
+```{r}
+library(randomForest)
+
+clean_cancer$Cohort = as.factor(clean_cancer$Cohort)
+set.seed(123) # for reproducibility
+# define the control using a random forest selection function
+control = rfeControl(functions=rfFuncs, method="cv", number=10)
+# run the RFE algorithm
+results = rfe(clean_cancer[,12:53], clean_cancer[,3], sizes=c(1:50), rfeControl=control)
+# summarize the results
+#print(results)
+# list the chosen features
+predictors(results)
+# plot the results
+plot(results, type=c("g", "o"))
+
+```
+
+RFE runs a random forest algorithm on the features and target that I give it. During the RFE process it cross validates the accuracy of the predictions for a range of variables that I feed it. Here we see that RFE starts at making predictions with only 1 variable and then keeps on going until it starts making predictions with all of my variables as features. My CV plot is showing that we reach an optimum in accuracy with 11 biomarkers. I will now filter my existing data set with only these features. 
+
+# NMDS Plotting 
+```{r}
+# creating numeric matrix
+predictions = predictors(results)
+filtered_cancer_data = clean_cancer[predictions]
+
+#making distance matrix 
+cancer.nmds = metaMDS(filtered_cancer_data, dist = "euclidean", k=2, trace = 0)
+
+#plotting ordiplot
+pl=ordiplot(cancer.nmds, type='none', 
+		main = paste0('Stress = ',round(cancer.nmds$stress,dig=3)), las = 1)
+points(pl, what = 'sites',col="black", bg =(clean_cancer$Cohort), pch=c(21))
+#ordiellipse(cancer.nmds, kind='ehull', draw = 'polygon',groups=clean_cancer$Cohort,label=F)
+legend('topleft',legend=levels(clean_cancer$Cohort), 
+		 col=seq_along(levels(clean_cancer$Cohort)), # need to use seq_along argument to have 
+		pch = 20, cex = 0.8, title = 'Cancer Type')
+
+
+
+```
+Once the features were selected I decided to visualize the differences between the cancer types by using both a NMDS plot and a PCA biplot.The reasoning behind plotting the data using NMDS was to see if I could find any non-specific orientation of the data that might lead to a separation between the groups in the cohort. Look at the NMDS plot, it does not show any significant differences in clustering between the 4 groups, even with the newly filtered data table.
+
+# ggfortify biplot
+
+```{r}
+
+cancer.pca = prcomp(filtered_cancer_data, scale. = T, center=T)
+RF = autoplot(cancer.pca, data = clean_cancer, colour = 'Cohort', loadings=F, size = 3,
+		loadings.label = T, loadings.label.size=4.5, expand = 6.5,loadings.label.repel=T ) 
+RF + ggtitle("PCA of RFE_markers") + theme_classic() +
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = "bold"),
+        axis.title.x.bottom = element_text(size=16, face="bold"),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = "bold"),
+        plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+        legend.title = element_text(size = 13, face = "bold"),
+        legend.text = element_text(size = 12))
+
+
+```
+# Conclusion:
+Fortunately looking at the new PCA biplot we do see more separation between the groups. There still seems to be a lot of overlap between all groups, but it seems to be easier to differentiate which biomarkers play a more significant role in determining if a patient has cancer or if they are healthy. Looking at the graph we see CA19-9, CA125, OPN, Prolactin, and Ferritin seem to signal for cancer, while MIF, FGF2, Total.PSA, Leptin, and maybe (sVEGFR1, and sHer2) correlate with patients being healthy.

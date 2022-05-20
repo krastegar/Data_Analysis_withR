@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Dimensional Reduction</title>
+
+<script src="site_libs/header-attrs-2.14/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">MultiVariate Statistics</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Dimensional Reduction of Cancer Cohort</a>
+</li>
+<li>
+  <a href="logistic_regression.html">Logistic Regression with Binomial GLM</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Dimensional Reduction</h1>
+
+</div>
+
+
+<div id="purpose" class="section level1">
+<h1>Purpose:</h1>
+<p>The field of diagnostics is crucial for patient survival. To be able
+to diagnosis terminal disease’s such as cancer at earlier stages
+drastically increases the chance of survival. To do this we would need
+to know what signals to look for. This is where liquid biopsy is useful
+because it is a process where it can isolate biomarkers from the blood
+that have been known to correlate with different cancers. Previously I
+used logistic regression to look at a small subset of biomarkers and
+determine if they are good indicators of cancer. This time I am going to
+determine if the data set I am working with can be visually separated
+into cancer and healthy groups and what variables play the biggest role
+in determing cancer. On top of that, I am going to determine which
+factors play the biggest contribution to each specific cancer.</p>
+</div>
+<div id="loading-in-libraries" class="section level1">
+<h1>Loading in Libraries</h1>
+<pre class="r"><code>rm(list=ls())
+library(cluster)</code></pre>
+<pre><code>## Warning: package &#39;cluster&#39; was built under R version 4.1.3</code></pre>
+<pre class="r"><code>library(factoextra)</code></pre>
+<pre><code>## Warning: package &#39;factoextra&#39; was built under R version 4.1.3</code></pre>
+<pre><code>## Loading required package: ggplot2</code></pre>
+<pre><code>## Welcome! Want to learn more? See two factoextra-related books at https://goo.gl/ve3WBa</code></pre>
+<pre class="r"><code>library(dplyr)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;dplyr&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     filter, lag</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     intersect, setdiff, setequal, union</code></pre>
+<pre class="r"><code>library(ggfortify)
+library(ggplot2)
+library(caret)</code></pre>
+<pre><code>## Warning: package &#39;caret&#39; was built under R version 4.1.3</code></pre>
+<pre><code>## Loading required package: lattice</code></pre>
+<pre class="r"><code>library(mlbench)</code></pre>
+<pre><code>## Warning: package &#39;mlbench&#39; was built under R version 4.1.3</code></pre>
+<pre class="r"><code>library(vegan)</code></pre>
+<pre><code>## Loading required package: permute</code></pre>
+<pre><code>## This is vegan 2.5-7</code></pre>
+<pre><code>## 
+## Attaching package: &#39;vegan&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:caret&#39;:
+## 
+##     tolerance</code></pre>
+</div>
+<div id="data-wrangling" class="section level1">
+<h1>Data wrangling</h1>
+<pre class="r"><code>cancer = read.csv(&quot;MDT3.csv&quot;, header = T)
+#cancer = cancer[c(-1,-2),-1] # getting rid of top 2 empty rows 
+
+# Making my first row into headers from an already existing dataframe in my environment
+# names(cancer) &lt;- as.matrix(cancer[1, ])
+# cancer = cancer[-1, ]
+# cancer[] &lt;- lapply(cancer, function(x) type.convert(as.character(x)))
+# cancer
+
+#Removing Specific Columns that I am not interested in
+# sub_cancer=cancer[ , -which(names(cancer) %in% c(&quot;Subject Cohort ID&quot;,&quot;Sample Type&quot;, 
+#                                  &quot;AJCC Stage&quot;, &quot;A/B/C&quot;,&quot;T&quot;, &quot;N&quot;, &quot;M&quot;,&quot;Histopathology&quot;))]
+
+# Removing columns with all NA&#39;s in it 
+clean_cancer=cancer %&gt;%
+   select(where(~!all(is.na(.))))
+
+#Scaling my cancer data set and changing label of control to healthy
+#clean_cancer = scale(clean_cancer)
+clean_cancer$Cohort[clean_cancer$Cohort==&quot;Control&quot;] = &quot;Healthy&quot;
+clean_cancer$Histopathology[clean_cancer$Histopathology==&quot;&quot;] = &quot;Healthy&quot;
+
+options(ggrepel.max.overlaps = Inf) # might help the knitting problem</code></pre>
+</div>
+<div id="k-mediods-clustering" class="section level1">
+<h1>K-mediods clustering</h1>
+<p>K-mediods cluster algorithm is very similar to K-means except that it
+treats one object (mediod) as the cluster instead of a calculating the
+distance from a centroid. Once it finds the mediod it performs a switch
+with all of the non-mediod points and calculates the dissimalarity of
+the two points. It iteratively repeats this process until it minimizes
+the dissimilarity between all points. The benefit to this is that it
+becomes more robust and less sensitive to the effects of outlier
+points.</p>
+<pre class="r"><code>biomarkers = na.omit(clean_cancer[, 12:53])
+biomarkers = scale(biomarkers)
+optimal_clusters=fviz_nbclust(biomarkers, FUNcluster = pam ,method=&quot;silhouette&quot;) 
+optimal=optimal_clusters +ggtitle(&quot;Optimal Clusters&quot;) + 
+  theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = &quot;bold&quot;),
+        axis.title.x.bottom = element_text(size=16, face=&quot;bold&quot;),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = &quot;bold&quot;),
+        plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5),
+        legend.title = element_text(size = 13, face = &quot;bold&quot;),
+        legend.text = element_text(size = 12)) 
+optimal</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<pre class="r"><code>ggsave(&quot;optimal_cluster.png&quot;, optimal)</code></pre>
+<pre><code>## Saving 7 x 5 in image</code></pre>
+<pre class="r"><code># fviz_nbclust is telling me that I have two optimal clusters which makes sense because it is probably clustering healthy samples together away from cancer samples 
+# silhouette is a measure of the distance between clusters (trying to find the optimal distance between clusters)</code></pre>
+</div>
+<div id="visualizing-initial-clusters-bw-cancer-and-healthy-patients"
+class="section level1">
+<h1>Visualizing Initial Clusters b/w Cancer and Healthy Patients</h1>
+<pre class="r"><code>set.seed(123)
+# calculating PAM clusters
+pam.res = pam(biomarkers, 2)
+#print(pam.res)
+
+pam_clust = cbind(na.omit(clean_cancer), cluster = pam.res$cluster) # have to do na.omit to make dimensions of df&#39;s match
+
+clean_cancer$Cohort = as.factor(clean_cancer$Cohort)
+biomarkers = as.matrix(biomarkers)
+
+k_mediod=fviz_cluster(pam.res, data = na.omit(clean_cancer), geom = c(&quot;point&quot;),
+              addEllipses=TRUE, ellipse.type=&#39;norm&#39;, repel = T )
+kmed=k_mediod + ggtitle(&quot;K-mediod Clusters&quot;) +
+  theme_classic()+
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = &quot;bold&quot;),
+        axis.title.x.bottom = element_text(size=16, face=&quot;bold&quot;),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = &quot;bold&quot;),
+        plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5),
+        legend.title = element_text(size = 13, face = &quot;bold&quot;),
+        legend.text = element_text(size = 12))
+kmed</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre class="r"><code>ggsave(&quot;k_mediod.png&quot;, kmed)</code></pre>
+<pre><code>## Saving 7 x 5 in image</code></pre>
+<p>To determine the composition of the two clusters that we saw I
+decided to use a PCA biplot, with different colors representing the
+different types of cancer. This way we can hopefully determine if the
+two clusters are significant when it comes to separating the cohort
+based on having cancer or being healthy.</p>
+</div>
+<div id="using-pca-to-determine-composition-of-k-mediod-clusters"
+class="section level1">
+<h1>Using PCA to determine composition of K-mediod clusters</h1>
+<pre class="r"><code>biomarkers.pca = prcomp(na.omit(biomarkers), center = T, scale. = T )
+cohort = fviz_pca_biplot(biomarkers.pca, col.ind = (clean_cancer$Cohort[-647])
+# last cell was empty and it was messing with my legend
+                ,geom = c(&quot;point&quot;), geom.var = &quot;point&quot;,addEllipses=TRUE,
+                mean.point=TRUE, ellipse.type=&#39;norm&#39;, repel = T )
+cohort_final=cohort + theme_classic() + ggtitle(&quot;PCA of Cohort&quot;) +
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = &quot;bold&quot;),
+        axis.title.x.bottom = element_text(size=16, face=&quot;bold&quot;),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = &quot;bold&quot;),
+        plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5),
+        legend.title = element_text(size = 13, face = &quot;bold&quot;),
+        legend.text = element_text(size = 12))
+cohort_final</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<pre class="r"><code>ggsave(&quot;cohort.png&quot;, cohort_final)</code></pre>
+<pre><code>## Saving 7 x 5 in image</code></pre>
+<pre class="r"><code># wanted to see if it was gender clustering 
+gender = fviz_pca_biplot(biomarkers.pca, col.ind = (clean_cancer$Sex[-647])
+                ,geom = c(&quot;point&quot;), geom.var = &quot;point&quot;,addEllipses=TRUE,
+                mean.point=TRUE, ellipse.type=&#39;norm&#39;, repel = T )
+
+gender + theme_classic() + ggtitle(&quot;PCA of Gender&quot;) +
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = &quot;bold&quot;),
+        axis.title.x.bottom = element_text(size=16, face=&quot;bold&quot;),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = &quot;bold&quot;),
+        plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5),
+        legend.title = element_text(size = 13, face = &quot;bold&quot;),
+        legend.text = element_text(size = 12)) </code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-5-2.png" width="672" /></p>
+<p>The PCA is showing that the two distinct clusters shown previously
+have all different types of healthy and cancer patients mixed into it.
+This could possibly be due to having too many biomarkers in the
+analysis. I will Repeating the process with a more filtered set of
+features. Since the clusters were not separated by cancer type, I
+decided to see if they were separated by gender. Looking at the second
+PCA biplot we can see that this is not the case</p>
+</div>
+<div id="filtering-out-features-based-on-pc-contributions"
+class="section level1">
+<h1>Filtering out features based on PC contributions</h1>
+<pre class="r"><code>summary(biomarkers.pca)</code></pre>
+<pre><code>## Importance of components:
+##                           PC1     PC2     PC3     PC4     PC5     PC6     PC7
+## Standard deviation     4.0583 1.90503 1.68355 1.28933 1.17629 1.16158 1.13327
+## Proportion of Variance 0.3921 0.08641 0.06748 0.03958 0.03294 0.03213 0.03058
+## Cumulative Proportion  0.3921 0.47855 0.54603 0.58561 0.61856 0.65068 0.68126
+##                            PC8    PC9    PC10   PC11    PC12    PC13    PC14
+## Standard deviation     1.06736 1.0491 1.00997 0.9935 0.96618 0.88294 0.84605
+## Proportion of Variance 0.02713 0.0262 0.02429 0.0235 0.02223 0.01856 0.01704
+## Cumulative Proportion  0.70838 0.7346 0.75888 0.7824 0.80460 0.82316 0.84021
+##                           PC15   PC16    PC17    PC18    PC19   PC20    PC21
+## Standard deviation     0.81134 0.7885 0.73990 0.68652 0.63571 0.6114 0.59192
+## Proportion of Variance 0.01567 0.0148 0.01303 0.01122 0.00962 0.0089 0.00834
+## Cumulative Proportion  0.85588 0.8707 0.88372 0.89494 0.90456 0.9135 0.92180
+##                           PC22   PC23    PC24   PC25    PC26    PC27    PC28
+## Standard deviation     0.57423 0.5265 0.51966 0.5101 0.47831 0.46021 0.44928
+## Proportion of Variance 0.00785 0.0066 0.00643 0.0062 0.00545 0.00504 0.00481
+## Cumulative Proportion  0.92966 0.9363 0.94268 0.9489 0.95433 0.95937 0.96418
+##                           PC29    PC30    PC31    PC32    PC33    PC34    PC35
+## Standard deviation     0.42737 0.41249 0.40065 0.39452 0.37724 0.34778 0.32840
+## Proportion of Variance 0.00435 0.00405 0.00382 0.00371 0.00339 0.00288 0.00257
+## Cumulative Proportion  0.96853 0.97258 0.97640 0.98010 0.98349 0.98637 0.98894
+##                           PC36    PC37    PC38    PC39    PC40    PC41    PC42
+## Standard deviation     0.30703 0.30012 0.27984 0.26091 0.24951 0.21416 0.16022
+## Proportion of Variance 0.00224 0.00214 0.00186 0.00162 0.00148 0.00109 0.00061
+## Cumulative Proportion  0.99118 0.99333 0.99519 0.99681 0.99830 0.99939 1.00000</code></pre>
+<pre class="r"><code>#calculate total variance explained by each principal component
+var_explained = biomarkers.pca$sdev^2 / sum(biomarkers.pca$sdev^2)
+
+#create scree plot to see which Principal components I should use 
+scree=qplot(c(1:42), var_explained) + 
+  geom_line() + 
+  geom_point(size = 3) +
+  theme_classic()+
+      theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = &quot;bold&quot;),
+        axis.title.x.bottom = element_text(size=16, face=&quot;bold&quot;),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = &quot;bold&quot;),
+        plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5)) +
+  xlab(&quot;Principal Component&quot;) + 
+  ylab(&quot;Variance Explained&quot;) +
+  ggtitle(&quot;Scree Plot&quot;) +
+  ylim(0, 0.4)
+scree</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code>ggsave(&quot;scree.png&quot;, scree)</code></pre>
+<pre><code>## Saving 7 x 5 in image</code></pre>
+<pre class="r"><code># Contributions from PC1
+PC1_contribution = fviz_contrib(biomarkers.pca, choice = &quot;var&quot;, axes =1 , top = 21)
+PC1_contribution</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-6-2.png" width="672" /></p>
+<pre class="r"><code>PC1_list_of_vars = PC1_contribution[[&quot;layers&quot;]][[1]][[&quot;data&quot;]][[&quot;name&quot;]] 
+# list of variables are inside PC_contribuition object
+
+#Contributions from PC2
+PC2_contribution = fviz_contrib(biomarkers.pca, choice = &quot;var&quot;, axes =2 , top = 8)
+PC2_contribution</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-6-3.png" width="672" /></p>
+<pre class="r"><code>PC2_list_of_vars = PC2_contribution[[&quot;layers&quot;]][[1]][[&quot;data&quot;]][[&quot;name&quot;]]
+
+#Contributions from PC3
+PC3_contribution = fviz_contrib(biomarkers.pca, choice = &quot;var&quot;, axes =3 , top = 9)
+PC3_contribution</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-6-4.png" width="672" /></p>
+<pre class="r"><code>PC3_list_of_vars = PC3_contribution[[&quot;layers&quot;]][[1]][[&quot;data&quot;]][[&quot;name&quot;]]
+
+#Combining variables
+pc1_pc2 = setdiff(PC2_list_of_vars, PC1_list_of_vars)
+pc1_pc3 = setdiff(PC3_list_of_vars, PC1_list_of_vars)
+pc1_pc2# I am going to just combine pc1 and pc2 list </code></pre>
+<pre><code>## [1] &quot;MIA&quot;         &quot;SHBG&quot;        &quot;TIMP2&quot;       &quot;Galectin.3&quot;  &quot;Cathepsin.D&quot;
+## [6] &quot;MPO&quot;         &quot;IGFBP3&quot;</code></pre>
+<pre class="r"><code>pc1_pc3</code></pre>
+<pre><code>## [1] &quot;IL.6&quot;     &quot;HE4&quot;      &quot;VEGF&quot;     &quot;Ferritin&quot;</code></pre>
+<pre class="r"><code>filtered_list = c(PC1_list_of_vars,PC2_list_of_vars,PC3_list_of_vars)
+filtered_list</code></pre>
+<pre><code>##  [1] sIL.6Ra       Tenascin.C    HGF           SCF           TRAIL        
+##  [6] TNFa          sNeuropilin.1 sHGFR.c.Met   sHer2         sc.kit.SCFR  
+## [11] sPECAM.1      sAXL          sHer3         sE.selectin   FAP.alpha    
+## [16] TIMP1         sVEGFR1       FGF2          sVEGFR3       b.HCG        
+## [21] IL.8          MIA           SHBG          TIMP2         Galectin.3   
+## [26] Cathepsin.D   MPO           FAP.alpha     IGFBP3        IL.6         
+## [31] HE4           IL.8          VEGF          Ferritin      TIMP1        
+## [36] TNFa          sHer3         sVEGFR1      
+## 32 Levels: sIL.6Ra Tenascin.C HGF SCF TRAIL TNFa sNeuropilin.1 ... Ferritin</code></pre>
+<pre class="r"><code>#Creating a more filtered data set for PCA 
+new_cancer = clean_cancer[filtered_list]
+#new_cancer
+
+# Creating new marix for pca
+new_biomarkers = scale(as.matrix(new_cancer[,12:29]), center = T, scale = T)
+#new_biomarkers</code></pre>
+<p>To reduce the amount of “noise” in my data set, I decided to reduce
+the number of variables in my analysis To do this I took the most
+important features from PC1, PC2, and PC3 and used those to create a new
+filtered data set. The new filtered data contained only 32 biomarkers
+instead of 42.</p>
+</div>
+<div id="making-new-pca-biplot" class="section level1">
+<h1>Making New PCA biplot</h1>
+<pre class="r"><code>new_biomarkers.pca = prcomp(na.omit(new_biomarkers), center = F, scale. = F )
+filtered_cohort = fviz_pca_biplot(new_biomarkers.pca, col.ind = (clean_cancer$Cohort[-647])
+                ,geom = c(&quot;point&quot;), geom.var = &quot;point&quot;,addEllipses=TRUE,
+                mean.point=TRUE, ellipse.type=&#39;norm&#39;, repel = T )
+
+pca_cohort=filtered_cohort + theme_classic() + ggtitle(&quot;PCA of PC Contribution&quot;) +
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = &quot;bold&quot;),
+        axis.title.x.bottom = element_text(size=16, face=&quot;bold&quot;),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = &quot;bold&quot;),
+        plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5),
+        legend.title = element_text(size = 13, face = &quot;bold&quot;),
+        legend.text = element_text(size = 12))
+pca_cohort</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<pre class="r"><code>ggsave(&quot;pca_cohort.png&quot;, pca_cohort)</code></pre>
+<pre><code>## Saving 7 x 5 in image</code></pre>
+<p>Since filtering features based on Principle Component contribution
+was did not give us the cluster separation that I was looking for, I
+will resort to using Recursive Feature Elimination (RFE) and then use
+NMDS to visualize the clusters.</p>
+<pre class="r"><code>library(randomForest)</code></pre>
+<pre><code>## Warning: package &#39;randomForest&#39; was built under R version 4.1.3</code></pre>
+<pre><code>## randomForest 4.7-1</code></pre>
+<pre><code>## Type rfNews() to see new features/changes/bug fixes.</code></pre>
+<pre><code>## 
+## Attaching package: &#39;randomForest&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:dplyr&#39;:
+## 
+##     combine</code></pre>
+<pre><code>## The following object is masked from &#39;package:ggplot2&#39;:
+## 
+##     margin</code></pre>
+<pre class="r"><code>clean_cancer$Cohort = as.factor(clean_cancer$Cohort)
+set.seed(123) # for reproducibility
+# define the control using a random forest selection function
+control = rfeControl(functions=rfFuncs, method=&quot;cv&quot;, number=10)
+# run the RFE algorithm
+results = rfe(clean_cancer[,12:53], clean_cancer[,3], sizes=c(1:50), rfeControl=control)
+# summarize the results
+#print(results)
+# list the chosen features
+predictors(results)</code></pre>
+<pre><code>##  [1] &quot;CA.125&quot;    &quot;CA.19.9&quot;   &quot;Prolactin&quot; &quot;Ferritin&quot;  &quot;Total.PSA&quot; &quot;OPN&quot;      
+##  [7] &quot;sHer2&quot;     &quot;MIF&quot;       &quot;sVEGFR1&quot;   &quot;Leptin&quot;    &quot;FGF2&quot;</code></pre>
+<pre class="r"><code># plot the results
+plot(results, type=c(&quot;g&quot;, &quot;o&quot;))</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>RFE runs a random forest algorithm on the features and target that I
+give it. During the RFE process it cross validates the accuracy of the
+predictions for a range of variables that I feed it. Here we see that
+RFE starts at making predictions with only 1 variable and then keeps on
+going until it starts making predictions with all of my variables as
+features. My CV plot is showing that we reach an optimum in accuracy
+with 11 biomarkers. I will now filter my existing data set with only
+these features.</p>
+</div>
+<div id="nmds-plotting" class="section level1">
+<h1>NMDS Plotting</h1>
+<pre class="r"><code># creating numeric matrix
+predictions = predictors(results)
+filtered_cancer_data = clean_cancer[predictions]
+
+#making distance matrix 
+cancer.nmds = metaMDS(filtered_cancer_data, dist = &quot;euclidean&quot;, k=2, trace = 0)
+
+#plotting ordiplot
+pl=ordiplot(cancer.nmds, type=&#39;none&#39;, 
+        main = paste0(&#39;Stress = &#39;,round(cancer.nmds$stress,dig=3)), las = 1)
+points(pl, what = &#39;sites&#39;,col=&quot;black&quot;, bg =(clean_cancer$Cohort), pch=c(21))
+#ordiellipse(cancer.nmds, kind=&#39;ehull&#39;, draw = &#39;polygon&#39;,groups=clean_cancer$Cohort,label=F)
+legend(&#39;topleft&#39;,legend=levels(clean_cancer$Cohort), 
+         col=seq_along(levels(clean_cancer$Cohort)), # need to use seq_along argument to have 
+        pch = 20, cex = 0.8, title = &#39;Cancer Type&#39;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" width="672" />
+Once the features were selected I decided to visualize the differences
+between the cancer types by using both a NMDS plot and a PCA biplot.The
+reasoning behind plotting the data using NMDS was to see if I could find
+any non-specific orientation of the data that might lead to a separation
+between the groups in the cohort. Look at the NMDS plot, it does not
+show any significant differences in clustering between the 4 groups,
+even with the newly filtered data table.</p>
+</div>
+<div id="ggfortify-biplot" class="section level1">
+<h1>ggfortify biplot</h1>
+<pre class="r"><code>cancer.pca = prcomp(filtered_cancer_data, scale. = T, center=T)
+RF = autoplot(cancer.pca, data = clean_cancer, colour = &#39;Cohort&#39;, loadings=F, size = 3,
+        loadings.label = T, loadings.label.size=4.5, expand = 6.5,loadings.label.repel=T ) 
+RF + ggtitle(&quot;PCA of RFE_markers&quot;) + theme_classic() +
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = &quot;bold&quot;),
+        axis.title.x.bottom = element_text(size=16, face=&quot;bold&quot;),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = &quot;bold&quot;),
+        plot.title = element_text(size = 18, face = &quot;bold&quot;, hjust = 0.5),
+        legend.title = element_text(size = 13, face = &quot;bold&quot;),
+        legend.text = element_text(size = 12))</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-10-1.png" width="672" />
+# Conclusion: Fortunately looking at the new PCA biplot we do see more
+separation between the groups. There still seems to be a lot of overlap
+between all groups, but it seems to be easier to differentiate which
+biomarkers play a more significant role in determining if a patient has
+cancer or if they are healthy. Looking at the graph we see CA19-9,
+CA125, OPN, Prolactin, and Ferritin seem to signal for cancer, while
+MIF, FGF2, Total.PSA, Leptin, and maybe (sVEGFR1, and sHer2) correlate
+with patients being healthy.</p>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
