@@ -1,0 +1,168 @@
+---
+title: "Logistic Regression"
+output: html_document
+---
+
+# Purpose: 
+Early detection of diseases is one of the most important factors when it comes to patient health. The faster the disease is detected the higher the chances of patient recovery. One of the best way to detecting diseases is to identify specific biomarkers which can be related to these diseases and determine if they play specific part in a binary response for a patient to be healthy or sick. In this notebook I am analyzing a patient cohort that are split up into two different groups (Cancer or Healthy) and using a logistic regression model to determine if specific protein concentration would be good indicators for determining if a patient is healthy or has cancer.
+
+```{r setup, include=FALSE}
+rm(list = ls())
+library(tidyverse)
+library(car)
+library(arm) # to check my binomial glm 
+library(ggplot2)
+library(tidyr) # need for pivot function to reshape data 
+library(pracma) # for nth root function in glm 
+```
+
+# Data Wrangling
+Doing some data wrangling. I want to create a column where I can I have binary values that correlate to the patients status of having cancer or not. The overall goal is to look for specific biomarkers that may be a good indicator of cancer and can be shown on a logistic regression curve. 
+```{r}
+bm = read.csv("MDT2.csv") # reading in my data table
+
+# Creating my binary values to classify patients as Healthy vs Cancer. Cancer is assigned a value of 1 and Healthy is 0
+bm = mutate(bm, binary = bm$Cancer.Healthy)
+bm$binary[bm$binary=="Cancer"] = "1"
+bm$binary[bm$binary=="Healthy"] = "0"
+bm$binary[bm$binary == "Ovarian" | bm$binary =="Pancreatic" | 
+  bm$binary == "Bladder"] = "1"
+
+#noticed that some of my values in my Cancer vs Healthy column had the Cancer type in it, So I am cleaning it up here. 
+bm$Cancer.Healthy = as.factor(bm$Cancer.Healthy)
+bm$Cancer.Healthy[bm$Cancer.Healthy=="Ovarian" | 
+                    bm$Cancer.Healthy=="Pancreatic" |
+                    bm$Cancer.Healthy=="Bladder"] = "Cancer"
+
+```
+
+# Exploratory Data Analysis
+Performing some exploratory data anlaysis. I want to see if I can narrow down the 20 biomarkers that are tested for on the Luminex plate and look for maybe 2 or 3 of them to build a model around. 
+```{r}
+# remember to use correlation plot with all the cancer biomarkers 
+bm[16:37] = as.integer(as.matrix(bm[16:37])) # have to change my biomarker concentration to numeric values 
+explore=bm %>% dplyr::select(Patient.ID, CA.19.9, CA.125, CA.15.3, MIF, CEA, OPN,Cancer.Healthy, Gender) %>%
+  pivot_longer(., cols = c(CA.19.9, CA.125, CA.15.3, MIF, CEA, OPN), 
+               names_to = "Biomarkers", 
+               values_to = "Val") %>% 
+  ggplot(aes(x=Biomarkers, y = log(Val), fill = Cancer.Healthy)) + 
+  geom_boxplot() + ylim(c(0,15)) + 
+  ylab("log(Concentrarion) (U/mL)") +
+  theme_classic() + 
+  theme(axis.text.x.bottom = element_text(angle = 90, size=12 ),
+        strip.text.x = element_text(size = 15, face = "bold"),
+        axis.title.x.bottom = element_text(size=16, face="bold"),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = "bold"),
+        legend.title = element_text(size = 13, face = "bold"),
+        legend.text = element_text(size = 12)) +
+  scale_fill_discrete(name = "Cancer Status") # works because fill is why I have a legend (might be different if legend was color)
+explore
+ggsave("Exp_boxplot.png", explore)
+# Checking different transformations of my data into a normal distribution. 
+
+par(mfrow=c(2,2)) # fit graphs in one panel
+qqnorm(nthroot(bm[,32]+100,3), main = "OPN (Q-Q Plot)" )
+qqline(nthroot(bm[,32]+100,3))
+qqnorm(nthroot(bm[,17]+100,3), main = "CA15-3 (Q-Q Plot)" )
+qqline(nthroot(bm[,17]+100,3))
+qqnorm(nthroot(bm[,18]+100,3), main = "CA19-3 (Q-Q Plot)" )
+qqline(nthroot(bm[,17]+100,3))
+
+# I am choosing to go with the sqrt transformation because CA.19.9 distribution is closer to normal than cuberoot
+par(mfrow=c(2,2))
+qqnorm(sqrt(bm[,32]+1000), main = "OPN (Q-Q Plot)" )
+qqline(sqrt(bm[,32]+1000))
+qqnorm(sqrt(bm[,17]+1000), main = "CA15-3 (Q-Q Plot)" )
+qqline(sqrt(bm[,17]+1000))
+qqnorm(sqrt(bm[,18]+1000), main = "CA19-3 (Q-Q Plot)" )
+qqline(sqrt(bm[,17]+1000))
+
+# I am using pivot_longer to change the shape of my data frame so that I am able to plot multiple biomarkers. What it does is takes the 7 columns that I fed into the cols = arguement and puts them into 1 long column. It also makes another column specifically for the values of each biomarker
+
+```
+
+Based on my observations of my exploratory plot I will focus on using OPN, CA19-9 and CA15-3. It might be interesting to look at OPN for females exclusively considering that we can see a difference in between gender in our boxplots. Before creating my model I experimented with two different ways to transform my data so that it fits a normal distribution (cube root vs square root). After inspecting the qqnorm plots, I decided that using the square root transformation gives me a slightly better estimation than cube root. 
+
+# Building Binary glm
+```{r}
+mod1 = glm(Cancer.Healthy~nthroot(OPN+100,3)+nthroot(CA.19.9+100,3)+nthroot(CA.15.3+100,3), family = binomial(link = "logit"), data = bm)
+summary(mod1)
+mod1.1 = glm(Cancer.Healthy~sqrt(OPN+1000)+sqrt(CA.19.9+1000)+sqrt(CA.15.3+1000), family = binomial(link = "logit"), data = bm)
+summary(mod1.1)
+# testing to see if the models are different
+anova(mod1, mod1.1, test="Chisq")
+# I am chosing mod1.1 because the deciding factor (for me) is to see if CA19.9 is significant or not and since mod1.1 transformation has CA19.9 fitting the qqnorm plot better I would say that mod1.1 is a more accurate description of what our data is representing 
+options(contrasts = c("contr.sum","contr.poly"))
+Anova(mod1.1, type = 3, test="F")
+options(contrasts = c("contr.treatment","contr.poly"))
+
+#it looks like that both CA19-9 and CA15-3 play a significant role in determing cancer 
+mod2 = glm(Cancer.Healthy~sqrt(OPN+1000)*Gender+sqrt(CA.19.9+1000)*Gender+sqrt(CA.15.3+1000)*Gender, family = binomial(link = "logit"), data = bm)
+summary(mod2) 
+options(contrasts = c("contr.sum","contr.poly"))
+Anova(mod2, type = 3, test="F")
+options(contrasts = c("contr.treatment","contr.poly"))
+anova(mod1.1, mod2,test="Chisq") # liklihood ratio test
+
+# it seems that interaction with gender is signficant with the CA19-9 biomarker, CA15-3 seems to be are most significant biomarker. OPN with the interaction of Gender included seems to be on the boarder. I am going to drop the OPN biomarker because without the gender interaction it is not significant and even witht the gender interaction it is borderline. 
+
+mod3 = glm(Cancer.Healthy~sqrt(CA.19.9+1000)*Gender+sqrt(CA.15.3+1000), family = binomial(link = "logit"), data = bm) 
+summary(mod3)
+options(contrasts = c("contr.sum","contr.poly"))
+Anova(mod3, type = 3, test="F")
+options(contrasts = c("contr.treatment","contr.poly"))
+anova(mod2, mod3,test="Chisq")
+# My liklihood ratio is telling me that there is a difference between mod2 and mod3. I will be using mod3 because it seems to account for more of the variation in our data set. 
+
+x = predict(mod3)
+y = resid(mod3)
+binnedplot(x, y)
+
+
+
+
+
+```
+
+
+# Logistic Regression Plots
+```{r}
+
+
+bm$binary = as.numeric(bm$binary)# weight, arguement is important for reducing impact of outliers when fitting model for any variable of interest
+CA19.9=ggplot(bm, aes(x = sqrt(CA.19.9+1000), y=binary, weight = sqrt(CA.19.9+1000) ,color=Gender)) + 
+  xlim(c(30,150)) +
+  geom_point() + 
+  geom_smooth(data = bm, aes(x=sqrt(CA.19.9+1000), y = binary), method = "glm", method.args = list(family = "binomial")) + 
+  theme_classic() + 
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = "bold"),
+        axis.title.x.bottom = element_text(size=16, face="bold"),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = "bold"),
+        legend.title = element_text(size = 13, face = "bold"),
+        legend.text = element_text(size = 12)) +
+  xlab("sqrt(CA.19.9+1000)") + ylab("Probability of Cancer")
+ggsave("CA19-9.png", CA19.9)
+
+CA15.3=ggplot(bm, aes(x = sqrt(CA.15.3+1000), y=binary, weight=sqrt(CA.15.3+1000))) +
+  xlim(c(31.5,33)) +
+  geom_point() + 
+  geom_smooth(data = bm, aes(x=sqrt(CA.15.3+1000), y = binary), method = "glm", method.args = list(family = "binomial")) + 
+  theme_classic() + 
+    theme(axis.text.x.bottom = element_text( size=12 ),
+        strip.text.x = element_text(size = 15, face = "bold"),
+        axis.title.x.bottom = element_text(size=16, face="bold"),
+        axis.text.y.left = element_text(size = 12),
+        axis.title.y.left = element_text(size = 16, face = "bold")) +
+  xlab("sqrt(CA.15.3+1000)") + ylab("Probability of Cancer")
+
+ggsave("CA15-3.png", CA15.3)
+CA15.3
+CA19.9
+
+```
+
+# Conclusion:
+The final model I decided to stick with was a binomial logistic regression model only looks at two of the six biomarkers from the random subsets. These two biomarkers are CA19-9 and CA15-3. Looking at the significance of gender we do see that it has a significant interaction with the CA19-9 biomarker, but not with CA15-3. Including all these factors I ended up plotting my final model using a binned plot from the arm package. Binned plot shows where the residuals lie within the standard error of my model, which is determined by my fixed variables. Looking at my logistic regression curves it does seem that both CA19-9 and CA15-3 protein concentrations are good indicators for the binary response of a patient having cancer or being healthy. 
